@@ -1,11 +1,13 @@
 package app.beetle.patches.slowly.features
 
 import app.beetle.patches.slowly.shared.Constants.COMPATIBILITY_SLOWLY
+import app.beetle.patches.slowly.shared.Constants.COMPATIBILITY_SLOWLY_AVATAR
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.rawResourcePatch
 
 private const val BUNDLE_PATH = "assets/index.android.bundle"
-private const val BUNDLE_SIZE = 8_471_052
+private const val BUNDLE_SIZE_9_5_6 = 8_471_052
+private const val BUNDLE_SIZE_9_5_8 = 8_446_148
 private const val HBC_VERSION_OFFSET = 8
 
 private val HBC_MAGIC = byteArrayOf(
@@ -19,6 +21,11 @@ private data class HermesEdit(
     val offset: Int,
     val expected: ByteArray,
     val replacement: ByteArray,
+)
+
+private data class HermesBundleSpec(
+    val size: Int,
+    val edits: List<HermesEdit>,
 )
 
 private fun roleThresholdEdit(name: String, offset: Int, register: Int) = HermesEdit(
@@ -49,10 +56,10 @@ private fun requireBytes(bytes: ByteArray, offset: Int, expected: ByteArray, nam
     }
 }
 
-private fun verifyHermesBundle(bytes: ByteArray) {
-    if (bytes.size != BUNDLE_SIZE) {
+private fun verifyHermesBundle(bytes: ByteArray, expectedSize: Int) {
+    if (bytes.size != expectedSize) {
         throw PatchException(
-            "Slowly bundle size mismatch: expected $BUNDLE_SIZE bytes, found ${bytes.size}.",
+            "Slowly bundle size mismatch: expected $expectedSize bytes, found ${bytes.size}.",
         )
     }
 
@@ -81,12 +88,32 @@ private val EXPLORE_FILTER_EDITS = listOf(
     roleThresholdEdit("excluded-topic limit gate", 0x7C6D4E, 2),
 )
 
-private val AVATAR_BUILDER_EDITS = listOf(
+private val AVATAR_BUILDER_EDITS_9_5_6 = listOf(
     roleThresholdEdit("avatar item selection gate", 0x5FE3D0, 6),
     roleThresholdEdit("avatar tab selection gate", 0x5FE8EC, 2),
     roleThresholdEdit("avatar item lock-rendering gate", 0x5FF21E, 3),
     roleThresholdEdit("avatar paywall-button gate", 0x600A94, 33),
 )
+
+private val AVATAR_BUILDER_EDITS_9_5_8 = listOf(
+    roleThresholdEdit("avatar item selection gate", 0x5FBBE8, 6),
+    roleThresholdEdit("avatar tab selection gate", 0x5FC104, 2),
+    roleThresholdEdit("avatar item lock-rendering gate", 0x5FCA4C, 3),
+    roleThresholdEdit("avatar paywall-button gate", 0x5FE2C2, 33),
+)
+
+private val AVATAR_BUILDER_BUNDLE_SPECS = listOf(
+    HermesBundleSpec(BUNDLE_SIZE_9_5_6, AVATAR_BUILDER_EDITS_9_5_6),
+    HermesBundleSpec(BUNDLE_SIZE_9_5_8, AVATAR_BUILDER_EDITS_9_5_8),
+)
+
+private fun avatarBuilderBundleSpec(bytes: ByteArray): HermesBundleSpec =
+    AVATAR_BUILDER_BUNDLE_SPECS.firstOrNull { it.size == bytes.size }
+        ?: throw PatchException(
+            "Slowly Avatar Builder bundle size mismatch: expected " +
+                AVATAR_BUILDER_BUNDLE_SPECS.joinToString(" or ") { "${it.size}" } +
+                " bytes, found ${bytes.size}.",
+        )
 
 @Suppress("unused")
 val slowlyExtendedExploreFiltersPatch = rawResourcePatch(
@@ -100,7 +127,7 @@ val slowlyExtendedExploreFiltersPatch = rawResourcePatch(
         val bytes = bundle.readBytes()
         val originalSize = bytes.size
 
-        verifyHermesBundle(bytes)
+        verifyHermesBundle(bytes, BUNDLE_SIZE_9_5_6)
         applyHermesEdits(bytes, EXPLORE_FILTER_EDITS)
         bundle.writeBytes(bytes)
 
@@ -115,15 +142,16 @@ val slowlyAvatarBuilderItemsPatch = rawResourcePatch(
     name = "Slowly avatar builder items",
     description = "Enables Avatar Builder items marked as subscription-only without changing coin-priced item checks.",
 ) {
-    compatibleWith(COMPATIBILITY_SLOWLY)
+    compatibleWith(COMPATIBILITY_SLOWLY_AVATAR)
 
     execute {
         val bundle = get(BUNDLE_PATH)
         val bytes = bundle.readBytes()
         val originalSize = bytes.size
+        val bundleSpec = avatarBuilderBundleSpec(bytes)
 
-        verifyHermesBundle(bytes)
-        applyHermesEdits(bytes, AVATAR_BUILDER_EDITS)
+        verifyHermesBundle(bytes, bundleSpec.size)
+        applyHermesEdits(bytes, bundleSpec.edits)
         bundle.writeBytes(bytes)
 
         if (bytes.size != originalSize || bundle.length() != originalSize.toLong()) {

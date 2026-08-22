@@ -1,4 +1,10 @@
-## [1.0.1](https://github.com/homelander11/beetle-patches/compare/v1.0.0...v1.0.1) (2026-08-22)
+## [1.0.1-dev.2](https://github.com/homelander11/beetle-patches/compare/v1.0.1-dev.1...v1.0.1-dev.2) (2026-08-22)
+
+### 🐛 Bug Fixes
+
+* support Slowly 9.5.8 Avatar Builder ([8021924](https://github.com/homelander11/beetle-patches/commit/80219242dcdfe52c833a0cc277cc3f318d352953))
+
+## [1.0.1-dev.1](https://github.com/homelander11/beetle-patches/compare/v1.0.0...v1.0.1-dev.1) (2026-08-22)
 
 ### 🐛 Bug Fixes
 
