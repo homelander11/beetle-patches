@@ -1,3 +1,9 @@
+## [1.0.3-dev.1](https://github.com/homelander11/beetle-patches/compare/v1.0.2...v1.0.3-dev.1) (2026-08-22)
+
+### 🐛 Bug Fixes
+
+* support Slowly 9.5.8 Explore filters ([9e791b4](https://github.com/homelander11/beetle-patches/commit/9e791b4418c6ec55e6e710e35dc8558dc27c6086))
+
 ## [1.0.2](https://github.com/homelander11/beetle-patches/compare/v1.0.1...v1.0.2) (2026-08-22)
 
 ### 🐛 Bug Fixes
