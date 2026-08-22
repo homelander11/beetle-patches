@@ -9,8 +9,23 @@ Custom Morphe patches for multiple Android apps.
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
+> **[v1.0.0-dev.1](https://github.com/homelander11/beetle-patches/releases/tag/v1.0.0-dev.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;3 patches total
+<details open>
+<summary>📦 Slowly&nbsp;&nbsp;•&nbsp;&nbsp;3 patches</summary>
+<br>
 
-The patch list is generated automatically when a release is published.
+**🎯 Supported versions:**
+
+| 9.5.6 |
+| :---: |
+
+| 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
+|----------|----------------|-----------|
+| [Slowly Pairip license check bypass](#slowly-pairip-license-check-bypass) | Disables Pairip's client-side installer and license enforcement. |  |
+| [Slowly avatar builder items](#slowly-avatar-builder-items) | Enables Avatar Builder items marked as subscription-only without changing coin-priced item checks. |  |
+| [Slowly extended Explore filters](#slowly-extended-explore-filters) | Enables verified client-side Explore filters, including Last online within 48 hours and New Members Only, and raises excluded-country and excluded-topic selection limits. |  |
+
+</details>
 
 <!-- PATCHES_END -->
 
