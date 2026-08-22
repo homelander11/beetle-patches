@@ -77,7 +77,7 @@ private fun applyHermesEdits(bytes: ByteArray, edits: List<HermesEdit>) {
     }
 }
 
-private val EXPLORE_FILTER_EDITS = listOf(
+private val EXPLORE_FILTER_EDITS_9_5_6 = listOf(
     roleThresholdEdit("zodiac filter gate", 0x755324, 5),
     roleThresholdEdit("gender filter gate", 0x7553B7, 4),
     roleThresholdEdit("city filter gate", 0x75623D, 1),
@@ -87,6 +87,30 @@ private val EXPLORE_FILTER_EDITS = listOf(
     roleThresholdEdit("excluded-country limit gate", 0x75D261, 5),
     roleThresholdEdit("excluded-topic limit gate", 0x7C6D4E, 2),
 )
+
+private val EXPLORE_FILTER_EDITS_9_5_8 = listOf(
+    roleThresholdEdit("zodiac filter gate", 0x74FE3E, 5),
+    roleThresholdEdit("gender filter gate", 0x74FED1, 4),
+    roleThresholdEdit("city filter gate", 0x750D53, 1),
+    roleThresholdEdit("saved New-user restoration gate", 0x7524C0, 8),
+    roleThresholdEdit("saved city coordinates filter gate", 0x7524FE, 6),
+    roleThresholdEdit("shared Last-online-within-48-hours/New-Members-Only render gate", 0x752A01, 0),
+    roleThresholdEdit("excluded-country limit gate", 0x757CF8, 5),
+    roleThresholdEdit("excluded-topic limit gate", 0x7C157D, 2),
+)
+
+private val EXPLORE_FILTER_BUNDLE_SPECS = listOf(
+    HermesBundleSpec(BUNDLE_SIZE_9_5_6, EXPLORE_FILTER_EDITS_9_5_6),
+    HermesBundleSpec(BUNDLE_SIZE_9_5_8, EXPLORE_FILTER_EDITS_9_5_8),
+)
+
+private fun exploreFilterBundleSpec(bytes: ByteArray): HermesBundleSpec =
+    EXPLORE_FILTER_BUNDLE_SPECS.firstOrNull { it.size == bytes.size }
+        ?: throw PatchException(
+            "Slowly Explore filters bundle size mismatch: expected " +
+                EXPLORE_FILTER_BUNDLE_SPECS.joinToString(" or ") { "${it.size}" } +
+                " bytes, found ${bytes.size}.",
+        )
 
 private val AVATAR_BUILDER_EDITS_9_5_6 = listOf(
     roleThresholdEdit("avatar item selection gate", 0x5FE3D0, 6),
@@ -126,9 +150,10 @@ val slowlyExtendedExploreFiltersPatch = rawResourcePatch(
         val bundle = get(BUNDLE_PATH)
         val bytes = bundle.readBytes()
         val originalSize = bytes.size
+        val bundleSpec = exploreFilterBundleSpec(bytes)
 
-        verifyHermesBundle(bytes, BUNDLE_SIZE_9_5_6)
-        applyHermesEdits(bytes, EXPLORE_FILTER_EDITS)
+        verifyHermesBundle(bytes, bundleSpec.size)
+        applyHermesEdits(bytes, bundleSpec.edits)
         bundle.writeBytes(bytes)
 
         if (bytes.size != originalSize || bundle.length() != originalSize.toLong()) {
