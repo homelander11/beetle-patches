@@ -4,6 +4,7 @@
 
 # Log file
 *.log
+gradle-debug.txt
 
 # BlueJ files
 *.ctxt
