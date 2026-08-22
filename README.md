@@ -9,15 +9,15 @@ Custom Morphe patches for multiple Android apps.
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.0.0](https://github.com/homelander11/beetle-patches/releases/tag/v1.0.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;3 patches total
+> **[v1.0.1](https://github.com/homelander11/beetle-patches/releases/tag/v1.0.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;3 patches total
 <details open>
 <summary>📦 Slowly&nbsp;&nbsp;•&nbsp;&nbsp;3 patches</summary>
 <br>
 
 **🎯 Supported versions:**
 
-| 9.5.6 |
-| :---: |
+| 9.5.6 | 9.5.8 |
+| :---: | :---: |
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
