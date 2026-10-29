@@ -4,11 +4,15 @@ import app.beetle.patches.slowly.shared.Constants.COMPATIBILITY_SLOWLY
 import app.beetle.patches.slowly.shared.Constants.COMPATIBILITY_SLOWLY_AVATAR
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.rawResourcePatch
+import java.security.MessageDigest
 
 private const val BUNDLE_PATH = "assets/index.android.bundle"
 private const val BUNDLE_SIZE_9_5_6 = 8_471_052
 private const val BUNDLE_SIZE_9_5_8 = 8_446_148
+private const val BUNDLE_SIZE_10_0_5 = 9_620_668
 private const val HBC_VERSION_OFFSET = 8
+private const val HBC_FILE_LENGTH_OFFSET = 32
+private const val HBC_FOOTER_SIZE = 20
 
 private val HBC_MAGIC = byteArrayOf(
     0xC6.toByte(), 0x1F, 0xBC.toByte(), 0x03,
@@ -65,6 +69,25 @@ private fun verifyHermesBundle(bytes: ByteArray, expectedSize: Int) {
 
     requireBytes(bytes, 0, HBC_MAGIC, "Hermes magic")
     requireBytes(bytes, HBC_VERSION_OFFSET, HBC_VERSION_96, "Hermes bytecode version")
+    requireBytes(
+        bytes,
+        HBC_FILE_LENGTH_OFFSET,
+        ByteArray(4) { index -> (expectedSize ushr (index * 8)).toByte() },
+        "Hermes file length",
+    )
+    requireBytes(bytes, bytes.size - HBC_FOOTER_SIZE, hermesFileHash(bytes), "Hermes SHA-1 footer")
+}
+
+private fun hermesFileHash(bytes: ByteArray): ByteArray =
+    MessageDigest.getInstance("SHA-1").run {
+        update(bytes, 0, bytes.size - HBC_FOOTER_SIZE)
+        digest()
+    }
+
+private fun updateHermesFooter(bytes: ByteArray) {
+    // Hermes hashes all bytes preceding its 20-byte footer. Refresh after each
+    // patch so both feature patches can be applied to the same valid bundle.
+    hermesFileHash(bytes).copyInto(bytes, bytes.size - HBC_FOOTER_SIZE)
 }
 
 private fun applyHermesEdits(bytes: ByteArray, edits: List<HermesEdit>) {
@@ -99,9 +122,29 @@ private val EXPLORE_FILTER_EDITS_9_5_8 = listOf(
     roleThresholdEdit("excluded-topic limit gate", 0x7C157D, 2),
 )
 
+// Hermes v96 instruction boundaries verified in the supplied 10.0.5 bundle.
+// Keep the render, saved-state, and selection checks in sync with each other.
+private val EXPLORE_FILTER_EDITS_10_0_5 = listOf(
+    roleThresholdEdit("zodiac filter gate", 0x8612C5, 5),
+    roleThresholdEdit("gender filter gate", 0x861358, 3),
+    roleThresholdEdit("required-language/topic selection gate", 0x86188E, 1),
+    roleThresholdEdit("city filter gate", 0x86213E, 1),
+    roleThresholdEdit("saved required-language restoration gate", 0x863877, 9),
+    roleThresholdEdit("saved required-topic restoration gate", 0x8638BF, 9),
+    roleThresholdEdit("saved New-user restoration gate", 0x86390E, 9),
+    roleThresholdEdit("saved city coordinates filter gate", 0x86394C, 7),
+    roleThresholdEdit("updated zodiac state gate", 0x863D18, 5),
+    roleThresholdEdit("updated gender state gate", 0x863D68, 4),
+    roleThresholdEdit("shared Last-online-within-48-hours/New-Members-Only render gate", 0x863F15, 0),
+    roleThresholdEdit("excluded-country selection limit gate", 0x867722, 5),
+    roleThresholdEdit("excluded-country displayed limit gate", 0x868403, 0),
+    roleThresholdEdit("excluded-topic limit gate", 0x8D5F74, 2),
+)
+
 private val EXPLORE_FILTER_BUNDLE_SPECS = listOf(
     HermesBundleSpec(BUNDLE_SIZE_9_5_6, EXPLORE_FILTER_EDITS_9_5_6),
     HermesBundleSpec(BUNDLE_SIZE_9_5_8, EXPLORE_FILTER_EDITS_9_5_8),
+    HermesBundleSpec(BUNDLE_SIZE_10_0_5, EXPLORE_FILTER_EDITS_10_0_5),
 )
 
 private fun exploreFilterBundleSpec(bytes: ByteArray): HermesBundleSpec =
@@ -126,9 +169,20 @@ private val AVATAR_BUILDER_EDITS_9_5_8 = listOf(
     roleThresholdEdit("avatar paywall-button gate", 0x5FE2C2, 33),
 )
 
+private val AVATAR_BUILDER_EDITS_10_0_5 = listOf(
+    roleThresholdEdit("avatar local paywall gate", 0x6B5DF9, 13),
+    roleThresholdEdit("avatar item selection gate", 0x6B76E4, 7),
+    roleThresholdEdit("avatar tab selection gate", 0x6B7B4A, 4),
+    roleThresholdEdit("avatar item lock-rendering gate", 0x6B8213, 2),
+    roleThresholdEdit("avatar item renderer subscription flag", 0x6B8351, 8),
+    roleThresholdEdit("avatar saved-tab restoration gate", 0x6B89B8, 3),
+    roleThresholdEdit("avatar paywall-button gate", 0x6B9CD3, 37),
+)
+
 private val AVATAR_BUILDER_BUNDLE_SPECS = listOf(
     HermesBundleSpec(BUNDLE_SIZE_9_5_6, AVATAR_BUILDER_EDITS_9_5_6),
     HermesBundleSpec(BUNDLE_SIZE_9_5_8, AVATAR_BUILDER_EDITS_9_5_8),
+    HermesBundleSpec(BUNDLE_SIZE_10_0_5, AVATAR_BUILDER_EDITS_10_0_5),
 )
 
 private fun avatarBuilderBundleSpec(bytes: ByteArray): HermesBundleSpec =
@@ -154,6 +208,7 @@ val slowlyExtendedExploreFiltersPatch = rawResourcePatch(
 
         verifyHermesBundle(bytes, bundleSpec.size)
         applyHermesEdits(bytes, bundleSpec.edits)
+        updateHermesFooter(bytes)
         bundle.writeBytes(bytes)
 
         if (bytes.size != originalSize || bundle.length() != originalSize.toLong()) {
@@ -177,6 +232,7 @@ val slowlyAvatarBuilderItemsPatch = rawResourcePatch(
 
         verifyHermesBundle(bytes, bundleSpec.size)
         applyHermesEdits(bytes, bundleSpec.edits)
+        updateHermesFooter(bytes)
         bundle.writeBytes(bytes)
 
         if (bytes.size != originalSize || bundle.length() != originalSize.toLong()) {
