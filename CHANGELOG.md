@@ -1,3 +1,9 @@
+## [1.1.0-dev.1](https://github.com/homelander11/beetle-patches/compare/v1.0.3...v1.1.0-dev.1) (2026-10-29)
+
+### ✨ New Features
+
+* add experimental Slowly 10.0.5 support and inspection patches ([d611e7e](https://github.com/homelander11/beetle-patches/commit/d611e7e43f9a503ec8150a8f08b802dc6d62261e))
+
 ## [1.0.3](https://github.com/homelander11/beetle-patches/compare/v1.0.2...v1.0.3) (2026-08-22)
 
 ### 🐛 Bug Fixes
